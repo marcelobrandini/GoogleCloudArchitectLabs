@@ -1,3 +1,30 @@
+#!/bin/bash
+# Define color variables
+
+BLACK=`tput setaf 0`
+RED=`tput setaf 1`
+GREEN=`tput setaf 2`
+YELLOW=`tput setaf 3`
+BLUE=`tput setaf 4`
+MAGENTA=`tput setaf 5`
+CYAN=`tput setaf 6`
+WHITE=`tput setaf 7`
+
+BG_BLACK=`tput setab 0`
+BG_RED=`tput setab 1`
+BG_GREEN=`tput setab 2`
+BG_YELLOW=`tput setab 3`
+BG_BLUE=`tput setab 4`
+BG_MAGENTA=`tput setab 5`
+BG_CYAN=`tput setab 6`
+BG_WHITE=`tput setab 7`
+
+BOLD=`tput bold`
+RESET=`tput sgr0`
+#----------------------------------------------------start--------------------------------------------------#
+
+echo "${BG_MAGENTA}${BOLD}Starting Execution${RESET}"
+
 export REGION="${ZONE%-*}"
 
 gcloud services enable \
@@ -9,17 +36,13 @@ gcloud services enable \
   logging.googleapis.com \
   pubsub.googleapis.com
 
-
-sleep 70
-
+sleep 30
 
 PROJECT_NUMBER=$(gcloud projects describe $DEVSHELL_PROJECT_ID --format='value(projectNumber)')
-
 
 gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
     --member=serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com \
     --role=roles/eventarc.eventReceiver
-
 
 sleep 20
 
@@ -31,20 +54,18 @@ gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
 
 sleep 20
 
-
 gcloud projects add-iam-policy-binding $DEVSHELL_PROJECT_ID \
     --member=serviceAccount:service-$PROJECT_NUMBER@gcp-sa-pubsub.iam.gserviceaccount.com \
     --role=roles/iam.serviceAccountTokenCreator
 
 sleep 20
 
-
 gsutil mb -l $REGION gs://$DEVSHELL_PROJECT_ID-bucket
 
-gcloud pubsub topics create $TOPIC_NAME
+gcloud pubsub topics create $TOPIC
 
-mkdir qwiklabs
-cd qwiklabs
+mkdir lol
+cd lol
 
 cat > index.js <<'EOF_END'
 
@@ -119,9 +140,9 @@ functions.cloudEvent('memories-thumbnail-creator', cloudEvent => {
 
 EOF_END
 
-sed -i "8c\functions.cloudEvent('$FUNCTION_NAME', cloudEvent => { " index.js
+sed -i "8c\functions.cloudEvent('$FUNCTION', cloudEvent => { " index.js
 
-sed -i "18c\  const topicName = '$TOPIC_NAME';" index.js
+sed -i "18c\  const topicName = '$TOPIC';" index.js
 
 cat > package.json <<EOF_END
 {
@@ -146,8 +167,6 @@ cat > package.json <<EOF_END
 
 EOF_END
 
-
-
 PROJECT_ID=$(gcloud config get-value project)
 BUCKET_SERVICE_ACCOUNT="${PROJECT_ID}@${PROJECT_ID}.iam.gserviceaccount.com"
 
@@ -155,24 +174,21 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member=serviceAccount:$BUCKET_SERVICE_ACCOUNT \
   --role=roles/pubsub.publisher
 
-
-
-
 # Your existing deployment command
 deploy_function() {
-    gcloud functions deploy $FUNCTION_NAME \
+    gcloud functions deploy $FUNCTION \
     --gen2 \
     --runtime nodejs20 \
     --trigger-resource $DEVSHELL_PROJECT_ID-bucket \
     --trigger-event google.storage.object.finalize \
-    --entry-point $FUNCTION_NAME \
+    --entry-point $FUNCTION \
     --region=$REGION \
     --source . \
     --quiet
 }
 
 # Variables
-SERVICE_NAME="$FUNCTION_NAME"
+SERVICE_NAME="$FUNCTION"
 
 # Loop until the Cloud Run service is created
 while true; do
@@ -185,13 +201,12 @@ while true; do
     break
   else
     echo "Waiting for Cloud Run service to be created..."
-    sleep 10
+    sleep 20
   fi
 done
-
-
-
 
 curl -o map.jpg https://storage.googleapis.com/cloud-training/gsp315/map.jpg
 
 gsutil cp map.jpg gs://$DEVSHELL_PROJECT_ID-bucket/map.jpg
+
+
