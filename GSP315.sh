@@ -1,5 +1,3 @@
-
-
 export REGION="${ZONE%-*}"
 
 gcloud services enable \
