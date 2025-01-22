@@ -6,6 +6,8 @@ export PROJECT_ID=$DEVSHELL_PROJECT_ID
 
 gcloud config set compute/zone $ZONE
 
+echo "${BG_MAGENTA}${BOLD}Starting Execution${RESET}"
+
 gcloud compute instances create $VM_NAME \
 --zone=$ZONE --project=$DEVSHELL_PROJECT_ID \
 --machine-type=f1-micro \
@@ -20,10 +22,16 @@ gcloud compute instances create $VM_NAME \
 --no-shielded-secure-boot --shielded-vtpm --shielded-integrity-monitoring \
 --reservation-affinity=any
 
+echo "${BG_MAGENTA}${BOLD}VM CREATE${RESET}"
+
 gcloud compute firewall-rules create allow-http --action=ALLOW --direction=INGRESS --target-tags=http-server --source-ranges=0.0.0.0/0 --rules=tcp:80 --description="Allow incoming HTTP traffic"
 
+echo "${BG_MAGENTA}${BOLD}FIREWALL CREATE${RESET}"
 
 IP_CP=$(gcloud compute instances list --filter="name=('$VM_NAME')" --zones="$ZONE" --format='value(EXTERNAL_IP)')
 
+echo "${BG_MAGENTA}${BOLD}IP_CP OK${RESET}"
 
 curl http://$IP_CP
+
+echo "${BG_MAGENTA}${BOLD}CURL OK${RESET}"
